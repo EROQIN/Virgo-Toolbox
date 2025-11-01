@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Virgo Toolbox
 
-## Getting Started
+一个基于 Next.js + Tailwind CSS 构建的在线开发者工具箱，聚合 Base64 编解码、单位换算、正则测试、UUID 生成、音乐播放器、二维码/条形码生成等常用前端工具，并支持深浅色主题切换与动态背景效果。所有工具均在浏览器端运行，可直接部署到 Vercel。
 
-First, run the development server:
+![Virgo Toolbox Screenshot](./public/social-card.png)
+
+## ✨ 特性一览
+
+- 🔍 首页分类+搜索，快速定位所需工具  
+- 🌗 深色/浅色主题切换，背景包含动态代码地球与网格  
+- 🛠️ 纯前端实现的高频工具：Base64、Cron、正则、UUID、随机字符串、Markdown 预览等  
+- 🎧 内嵌 Lo-Fi 播放器，陪你编码  
+- 🧾 二维码 / 条形码生成，可下载 PNG / SVG  
+- ⚡ 一键部署到 Vercel，自动生成静态资源
+
+## 🛠️ 本地开发
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+浏览器访问 [http://localhost:3000](http://localhost:3000) 查看效果。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+运行 lint：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+```
 
-## Learn More
+## ▲ 一键部署到 Vercel
 
-To learn more about Next.js, take a look at the following resources:
+> 推荐直接使用 “Deploy with Vercel” 按钮。首次部署会自动 fork 仓库并配置环境。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/EROQIN/Virgo-Toolbox&project-name=virgo-toolbox&repository-name=virgo-toolbox)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+部署后即可通过 `https://你的项目名称.vercel.app` 访问线上版本。
 
-## Deploy on Vercel
+## 📂 目录结构
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/
+│   ├── layout.tsx       # 全局布局
+│   ├── page.tsx         # 首页（导航+搜索）
+│   └── tools/           # 各工具页面（App Router）
+├── components/
+│   ├── backgrounds/     # 背景动画（代码地球等）
+│   ├── tools/           # 工具模块组件
+│   └── theme-*.tsx      # 主题上下文 & 切换
+├── data/
+│   └── tools.ts         # 工具元数据定义
+└── styles / globals     # Tailwind 入口
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🤝 贡献
+
+欢迎提交 Issue 或 PR 来完善工具集合。建议流程：
+
+1. Fork 仓库  
+2. 新建分支 `feature/my-tool`  
+3. 在 `src/components/tools` 添加组件，并在 `src/data/tools.ts` 注册  
+4. 提交 PR，说明工具用途与验证方式
+
+## 🧑‍💻 作者
+
+Made with ❤️ by [Erokin](https://github.com/EROQIN)
+
+---
+
+> If you ship something using Virgo Toolbox, drop a ⭐️ or share it with @EROQIN！
+
