@@ -6,25 +6,26 @@ import DOMPurify from "isomorphic-dompurify";
 
 type LayoutMode = "split" | "editor" | "preview";
 
+type BaseToolbarAction = {
+  id: string;
+  label: string;
+  hint?: string;
+};
+
 type ToolbarAction =
-  | {
-      id: string;
-      label: string;
-      hint?: string;
+  | (BaseToolbarAction & {
       type: "wrap";
       before: string;
       after?: string;
       placeholder: string;
-    }
-  | {
-      id: string;
-      label: string;
+    })
+  | (BaseToolbarAction & {
       type: "line";
       prefix: string;
       placeholder: string;
-    }
-  | { id: string; label: string; type: "code-block" }
-  | { id: string; label: string; type: "link" };
+    })
+  | (BaseToolbarAction & { type: "code-block" })
+  | (BaseToolbarAction & { type: "link" });
 
 const defaultDocument = `# Markdown 在线编辑器\n\n欢迎使用 **Virgo 工具箱** Markdown 编辑器！\n\n- 支持常见格式化快捷操作\n- 可在左侧编辑、右侧预览\n- 统计字数、行数与字符数量\n\n> 点击上方按钮可快速插入标题、引用、列表等结构。\n\n\`\`\`ts\nfunction hello(name: string) {\n  return \`你好，\${name}!\`;\n}\n\`\`\`\n`;
 
