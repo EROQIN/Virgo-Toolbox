@@ -11,14 +11,30 @@ type Options = {
 
 const generateUuid = (options: Options) => {
   const list: string[] = [];
+  const cryptoObj =
+    typeof globalThis !== "undefined" && "crypto" in globalThis
+      ? (globalThis.crypto as Crypto)
+      : undefined;
   for (let index = 0; index < options.count; index += 1) {
-    let uuid = window.crypto?.randomUUID
-      ? window.crypto.randomUUID()
-      : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
-          const random = Math.floor(Math.random() * 16);
-          const value = char === "x" ? random : (random % 4) + 8;
-          return value.toString(16);
-        });
+    let uuid: string;
+    if (cryptoObj?.randomUUID) {
+      uuid = cryptoObj.randomUUID();
+    } else {
+      const randomBytes =
+        cryptoObj?.getRandomValues?.(new Uint8Array(16)) ??
+        Uint8Array.from({ length: 16 }, () =>
+          Math.floor(Math.random() * 256),
+        );
+      // RFC4122 v4
+      randomBytes[6] = (randomBytes[6] & 0x0f) | 0x40;
+      randomBytes[8] = (randomBytes[8] & 0x3f) | 0x80;
+      uuid = Array.from(randomBytes)
+        .map((byte, byteIndex) => {
+          const hex = byte.toString(16).padStart(2, "0");
+          return [4, 6, 8, 10].includes(byteIndex) ? `-${hex}` : hex;
+        })
+        .join("");
+    }
     if (!options.withHyphen) {
       uuid = uuid.replace(/-/g, "");
     }
