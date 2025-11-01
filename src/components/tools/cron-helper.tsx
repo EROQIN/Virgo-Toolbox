@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import cronParser from "cron-parser";
+import { parseExpression } from "cron-parser";
 import { useIsDarkTheme } from "@/components/theme-provider";
 
 const TEMPLATES: Array<{ label: string; expression: string; description: string }> = [
@@ -21,7 +21,7 @@ export default function CronHelper() {
 
   const { times, error } = useMemo(() => {
     try {
-      const interval = cronParser.parseExpression(expression, {
+      const interval = parseExpression(expression, {
         currentDate: new Date(),
       });
       const upcoming: string[] = [];
