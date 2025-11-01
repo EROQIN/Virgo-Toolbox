@@ -142,6 +142,17 @@ export const TOOL_LIST: ToolDefinition[] = [
     icon: "📝",
   },
   {
+    slug: "markdown-editor",
+    title: "Markdown 在线编辑器",
+    category: "效率工具",
+    description:
+      "集成常用格式化按钮与实时预览的 Markdown 编辑器，可快速排版并导出内容。",
+    summary: "写作记录的一体化 Markdown 工具。",
+    badge: "文档 · 编辑",
+    keywords: ["markdown", "编辑", "预览", "文档"],
+    icon: "🖊️",
+  },
+  {
     slug: "regex-tester",
     title: "正则表达式测试",
     category: "开发助手",
