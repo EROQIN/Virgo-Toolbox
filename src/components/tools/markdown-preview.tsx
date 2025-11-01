@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { marked } from "marked";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 
 const defaultContent = `# Virgo 工具箱
 
