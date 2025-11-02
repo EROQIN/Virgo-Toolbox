@@ -80,10 +80,10 @@ export const TOOL_LIST: ToolDefinition[] = [
     title: "时间戳转换器",
     category: "时间工具",
     description:
-      "在 Unix 时间戳与可读日期之间自由转换，支持秒与毫秒两种精度，并可快速获取当前时间。",
+      "在 Unix 时间戳与可读日期之间自由转换，支持秒、毫秒与纳秒三种精度，并可快速获取当前时间。",
     summary: "开发调试常见的时间戳换算器。",
     badge: "时间 · 转换",
-    keywords: ["时间戳", "unix", "日期", "秒", "毫秒"],
+    keywords: ["时间戳", "unix", "日期", "秒", "毫秒", "纳秒"],
     icon: "🕒",
   },
   {
