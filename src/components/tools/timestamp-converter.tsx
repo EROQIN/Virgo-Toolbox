@@ -6,6 +6,25 @@ type Unit = "seconds" | "milliseconds" | "nanoseconds";
 
 const NANOS_PER_MILLISECOND = BigInt(1000000);
 const BIGINT_ZERO = BigInt(0);
+const BIGINT_ONE = BigInt(1);
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+const formatNanosecondDate = (date: Date, fractionalNanoseconds: string) =>
+  `${date.getFullYear()}年${pad2(date.getMonth() + 1)}月${pad2(date.getDate())}日${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}.${fractionalNanoseconds}`;
+
+const buildFractionalNanoseconds = (
+  date: Date,
+  remainder: bigint | undefined
+) => {
+  const remainderSafe = remainder ?? BIGINT_ZERO;
+  const milliseconds = BigInt(date.getMilliseconds());
+  const fractional = milliseconds * NANOS_PER_MILLISECOND + remainderSafe;
+  return fractional.toString().padStart(9, "0");
+};
+
+const makeNanosecondCopyValue = (date: Date, remainder?: bigint) =>
+  formatNanosecondDate(date, buildFractionalNanoseconds(date, remainder));
 
 const getTimestampValue = (date: Date, precision: Unit) => {
   const milliseconds = Math.floor(date.getTime());
@@ -18,10 +37,8 @@ const getTimestampValue = (date: Date, precision: Unit) => {
   return (BigInt(milliseconds) * NANOS_PER_MILLISECOND).toString();
 };
 
-const formatDateTimeLocal = (date: Date) => {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+const formatDateTimeLocal = (date: Date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
 
 const formatReadable = (date: Date) =>
   new Intl.DateTimeFormat("zh-Hans", {
@@ -36,17 +53,29 @@ export default function TimestampConverter() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [activeDate, setActiveDate] = useState<Date | null>(null);
+  const [nanosecondCopyValue, setNanosecondCopyValue] = useState<string | null>(
+    null
+  );
 
   const readable = useMemo(() => {
     if (!activeDate) return "";
     return formatReadable(activeDate);
   }, [activeDate]);
 
+  const showCopySuccess = (message: string) => {
+    setInfo(message);
+    setError(null);
+    setTimeout(() => {
+      setInfo(null);
+    }, 1800);
+  };
+
   const applyDate = (
     date: Date,
     options?: {
       infoMessage?: string | null;
       timestampOverride?: string;
+      nanosecondRemainder?: bigint;
     }
   ) => {
     setActiveDate(date);
@@ -55,6 +84,13 @@ export default function TimestampConverter() {
     setDatetimeInput(formatDateTimeLocal(date));
     setError(null);
     setInfo(options?.infoMessage ?? null);
+    if (unit === "nanoseconds") {
+      setNanosecondCopyValue(
+        makeNanosecondCopyValue(date, options?.nanosecondRemainder)
+      );
+    } else {
+      setNanosecondCopyValue(null);
+    }
   };
 
   const handleTimestampChange = (value: string) => {
@@ -62,6 +98,7 @@ export default function TimestampConverter() {
     if (!value.trim()) {
       setError(null);
       setActiveDate(null);
+      setNanosecondCopyValue(null);
       return;
     }
     if (unit === "nanoseconds") {
@@ -72,15 +109,21 @@ export default function TimestampConverter() {
         setError("请输入合法的数字时间戳。");
         setInfo(null);
         setActiveDate(null);
+        setNanosecondCopyValue(null);
         return;
       }
-      const millisecondsBigInt = numeric / NANOS_PER_MILLISECOND;
-      const remainder = numeric % NANOS_PER_MILLISECOND;
+      let millisecondsBigInt = numeric / NANOS_PER_MILLISECOND;
+      let remainder = numeric % NANOS_PER_MILLISECOND;
+      if (remainder < BIGINT_ZERO) {
+        remainder += NANOS_PER_MILLISECOND;
+        millisecondsBigInt -= BIGINT_ONE;
+      }
       const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
       if (millisecondsBigInt > maxSafe || millisecondsBigInt < -maxSafe) {
         setError("该时间戳超出可转换范围。");
         setInfo(null);
         setActiveDate(null);
+        setNanosecondCopyValue(null);
         return;
       }
       const millisecondsNumber = Number(millisecondsBigInt);
@@ -89,15 +132,17 @@ export default function TimestampConverter() {
         setError("该时间戳无法转换为有效日期。");
         setInfo(null);
         setActiveDate(null);
+        setNanosecondCopyValue(null);
         return;
       }
       const infoMessage =
         remainder !== BIGINT_ZERO
-          ? `纳秒时间戳超出 JavaScript 日期精度，已舍弃余数 ${remainder} 纳秒。`
+          ? `纳秒时间戳超出 JavaScript 日期精度，显示内容会舍弃余数 ${remainder} 纳秒；下方可复制格式保留全部纳秒。`
           : undefined;
       applyDate(date, {
         infoMessage: infoMessage ?? null,
         timestampOverride: remainder === BIGINT_ZERO ? undefined : value,
+        nanosecondRemainder: remainder,
       });
       return;
     }
@@ -106,6 +151,7 @@ export default function TimestampConverter() {
       setError("请输入合法的数字时间戳。");
       setInfo(null);
       setActiveDate(null);
+      setNanosecondCopyValue(null);
       return;
     }
     const milliseconds = unit === "seconds" ? numeric * 1000 : numeric;
@@ -114,6 +160,7 @@ export default function TimestampConverter() {
       setError("该时间戳无法转换为有效日期。");
       setInfo(null);
       setActiveDate(null);
+      setNanosecondCopyValue(null);
       return;
     }
     applyDate(date);
@@ -124,6 +171,7 @@ export default function TimestampConverter() {
     if (!value) {
       setError(null);
       setActiveDate(null);
+      setNanosecondCopyValue(null);
       return;
     }
     const date = new Date(value);
@@ -131,6 +179,7 @@ export default function TimestampConverter() {
       setError("请输入合法的日期时间。");
       setInfo(null);
       setActiveDate(null);
+      setNanosecondCopyValue(null);
       return;
     }
     applyDate(date);
@@ -139,8 +188,16 @@ export default function TimestampConverter() {
   const handleUnitChange = (nextUnit: Unit) => {
     if (unit === nextUnit) return;
     setUnit(nextUnit);
-    if (!activeDate) return;
+    if (!activeDate) {
+      setNanosecondCopyValue(null);
+      return;
+    }
     setTimestampInput(getTimestampValue(activeDate, nextUnit));
+    if (nextUnit === "nanoseconds") {
+      setNanosecondCopyValue(makeNanosecondCopyValue(activeDate, BIGINT_ZERO));
+    } else {
+      setNanosecondCopyValue(null);
+    }
     setInfo(null);
   };
 
@@ -152,11 +209,18 @@ export default function TimestampConverter() {
     if (!timestampInput) return;
     try {
       await navigator.clipboard.writeText(timestampInput);
-      setInfo("时间戳已复制到剪贴板。");
-      setError(null);
-      setTimeout(() => {
-        setInfo(null);
-      }, 1800);
+      showCopySuccess("时间戳已复制到剪贴板。");
+    } catch {
+      setError("复制失败，请手动复制。");
+      setInfo(null);
+    }
+  };
+
+  const handleCopyNanosecondDate = async () => {
+    if (!nanosecondCopyValue) return;
+    try {
+      await navigator.clipboard.writeText(nanosecondCopyValue);
+      showCopySuccess("纳秒日期时间已复制到剪贴板。");
     } catch {
       setError("复制失败，请手动复制。");
       setInfo(null);
@@ -260,6 +324,26 @@ export default function TimestampConverter() {
             可读格式
           </p>
           <p className="mt-1 text-lg font-semibold">{readable}</p>
+        </div>
+      ) : null}
+
+      {unit === "nanoseconds" && nanosecondCopyValue ? (
+        <div className="rounded-2xl border border-emerald-500/30 bg-slate-950/60 p-4 text-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                纳秒可复制格式
+              </p>
+              <p className="mt-1 font-mono text-base">{nanosecondCopyValue}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyNanosecondDate}
+              className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-emerald-400 hover:text-white"
+            >
+              复制
+            </button>
+          </div>
         </div>
       ) : null}
 
