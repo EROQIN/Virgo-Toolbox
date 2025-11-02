@@ -55,13 +55,23 @@ const formatReadable = (date: Date) =>
   }).format(date);
 
 export default function TimestampConverter() {
+  const initialNow = useMemo(() => {
+    const now = new Date();
+    return {
+      date: now,
+      timestamp: getTimestampValue(now, "milliseconds"),
+      datetime: formatDateTimeLocal(now),
+      copy: makeCopyValue(now, "milliseconds"),
+    };
+  }, []);
+
   const [unit, setUnit] = useState<Unit>("milliseconds");
-  const [timestampInput, setTimestampInput] = useState("");
-  const [datetimeInput, setDatetimeInput] = useState("");
+  const [timestampInput, setTimestampInput] = useState(initialNow.timestamp);
+  const [datetimeInput, setDatetimeInput] = useState(initialNow.datetime);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [activeDate, setActiveDate] = useState<Date | null>(null);
-  const [copyValue, setCopyValue] = useState<string | null>(null);
+  const [activeDate, setActiveDate] = useState<Date | null>(initialNow.date);
+  const [copyValue, setCopyValue] = useState<string | null>(initialNow.copy);
 
   const readable = useMemo(() => {
     if (!activeDate) return "";
