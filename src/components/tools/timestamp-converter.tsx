@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 
 type Unit = "seconds" | "milliseconds" | "nanoseconds";
 
+const NANOS_PER_MILLISECOND = BigInt(1000000);
+const BIGINT_ZERO = BigInt(0);
+
 const getTimestampValue = (date: Date, precision: Unit) => {
   const milliseconds = Math.floor(date.getTime());
   if (precision === "seconds") {
@@ -12,7 +15,7 @@ const getTimestampValue = (date: Date, precision: Unit) => {
   if (precision === "milliseconds") {
     return String(milliseconds);
   }
-  return (BigInt(milliseconds) * 1_000_000n).toString();
+  return (BigInt(milliseconds) * NANOS_PER_MILLISECOND).toString();
 };
 
 const formatDateTimeLocal = (date: Date) => {
@@ -71,8 +74,8 @@ export default function TimestampConverter() {
         setActiveDate(null);
         return;
       }
-      const millisecondsBigInt = numeric / 1_000_000n;
-      const remainder = numeric % 1_000_000n;
+      const millisecondsBigInt = numeric / NANOS_PER_MILLISECOND;
+      const remainder = numeric % NANOS_PER_MILLISECOND;
       const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
       if (millisecondsBigInt > maxSafe || millisecondsBigInt < -maxSafe) {
         setError("该时间戳超出可转换范围。");
@@ -89,12 +92,12 @@ export default function TimestampConverter() {
         return;
       }
       const infoMessage =
-        remainder !== 0n
+        remainder !== BIGINT_ZERO
           ? `纳秒时间戳超出 JavaScript 日期精度，已舍弃余数 ${remainder} 纳秒。`
           : undefined;
       applyDate(date, {
         infoMessage: infoMessage ?? null,
-        timestampOverride: remainder === 0n ? undefined : value,
+        timestampOverride: remainder === BIGINT_ZERO ? undefined : value,
       });
       return;
     }
