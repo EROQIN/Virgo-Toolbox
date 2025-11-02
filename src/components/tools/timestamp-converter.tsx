@@ -2,7 +2,18 @@
 
 import { useMemo, useState } from "react";
 
-type Unit = "seconds" | "milliseconds";
+type Unit = "seconds" | "milliseconds" | "nanoseconds";
+
+const getTimestampValue = (date: Date, precision: Unit) => {
+  const milliseconds = Math.floor(date.getTime());
+  if (precision === "seconds") {
+    return String(Math.floor(milliseconds / 1000));
+  }
+  if (precision === "milliseconds") {
+    return String(milliseconds);
+  }
+  return (BigInt(milliseconds) * 1_000_000n).toString();
+};
 
 const formatDateTimeLocal = (date: Date) => {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -28,16 +39,19 @@ export default function TimestampConverter() {
     return formatReadable(activeDate);
   }, [activeDate]);
 
-  const applyDate = (date: Date) => {
+  const applyDate = (
+    date: Date,
+    options?: {
+      infoMessage?: string | null;
+      timestampOverride?: string;
+    }
+  ) => {
     setActiveDate(date);
-    const timestampValue =
-      unit === "seconds"
-        ? Math.floor(date.getTime() / 1000)
-        : date.getTime();
-    setTimestampInput(String(timestampValue));
+    const timestampValue = options?.timestampOverride ?? getTimestampValue(date, unit);
+    setTimestampInput(timestampValue);
     setDatetimeInput(formatDateTimeLocal(date));
     setError(null);
-    setInfo(null);
+    setInfo(options?.infoMessage ?? null);
   };
 
   const handleTimestampChange = (value: string) => {
@@ -45,6 +59,43 @@ export default function TimestampConverter() {
     if (!value.trim()) {
       setError(null);
       setActiveDate(null);
+      return;
+    }
+    if (unit === "nanoseconds") {
+      let numeric: bigint;
+      try {
+        numeric = BigInt(value);
+      } catch {
+        setError("请输入合法的数字时间戳。");
+        setInfo(null);
+        setActiveDate(null);
+        return;
+      }
+      const millisecondsBigInt = numeric / 1_000_000n;
+      const remainder = numeric % 1_000_000n;
+      const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+      if (millisecondsBigInt > maxSafe || millisecondsBigInt < -maxSafe) {
+        setError("该时间戳超出可转换范围。");
+        setInfo(null);
+        setActiveDate(null);
+        return;
+      }
+      const millisecondsNumber = Number(millisecondsBigInt);
+      const date = new Date(millisecondsNumber);
+      if (Number.isNaN(date.getTime())) {
+        setError("该时间戳无法转换为有效日期。");
+        setInfo(null);
+        setActiveDate(null);
+        return;
+      }
+      const infoMessage =
+        remainder !== 0n
+          ? `纳秒时间戳超出 JavaScript 日期精度，已舍弃余数 ${remainder} 纳秒。`
+          : undefined;
+      applyDate(date, {
+        infoMessage: infoMessage ?? null,
+        timestampOverride: remainder === 0n ? undefined : value,
+      });
       return;
     }
     const numeric = Number(value);
@@ -86,11 +137,8 @@ export default function TimestampConverter() {
     if (unit === nextUnit) return;
     setUnit(nextUnit);
     if (!activeDate) return;
-    const timestampValue =
-      nextUnit === "seconds"
-        ? Math.floor(activeDate.getTime() / 1000)
-        : activeDate.getTime();
-    setTimestampInput(String(timestampValue));
+    setTimestampInput(getTimestampValue(activeDate, nextUnit));
+    setInfo(null);
   };
 
   const handleNow = () => {
@@ -141,6 +189,17 @@ export default function TimestampConverter() {
           >
             秒
           </button>
+          <button
+            type="button"
+            onClick={() => handleUnitChange("nanoseconds")}
+            className={`rounded-full px-4 py-1.5 text-sm transition ${
+              unit === "nanoseconds"
+                ? "bg-sky-500 text-white"
+                : "bg-slate-900/70 text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
+            纳秒
+          </button>
         </div>
         <button
           type="button"
@@ -162,7 +221,11 @@ export default function TimestampConverter() {
             value={timestampInput}
             onChange={(event) => handleTimestampChange(event.target.value)}
             placeholder={
-              unit === "seconds" ? "例如：1704096000" : "例如：1704096000000"
+              unit === "seconds"
+                ? "例如：1704096000"
+                : unit === "milliseconds"
+                ? "例如：1704096000000"
+                : "例如：1704096000000000000"
             }
             className="h-11 w-full rounded-2xl border border-white/5 bg-slate-900/80 px-4 text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/40"
           />
@@ -203,7 +266,7 @@ export default function TimestampConverter() {
         <p className="text-xs text-sky-300">{info}</p>
       ) : (
         <p className="text-xs text-slate-400">
-          提示：上方日期使用本地时区显示，复制时间戳时请确认是否为秒或毫秒。
+          提示：上方日期使用本地时区显示，复制时间戳时请确认当前精度（秒、毫秒或纳秒）。
         </p>
       )}
     </div>
